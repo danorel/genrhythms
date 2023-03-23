@@ -1,7 +1,6 @@
 import functools
 
 from library.individual import Individual
-from library.population import Population
 from library.fitness import FitnessFunction
 
 
@@ -12,14 +11,17 @@ class Rank:
         self.c = c
         self.fitness_function = fitness_function
 
-    def match(self, population: Population):
-        individuals = self._sort(population.individuals)
-        probabilities = [self._probability(
-            len(individuals), rank) for rank in range(len(individuals))]
+    def match_with_probabilities(self, individuals: list[Individual]):
+        individuals = self._sort(individuals)
+        probabilities = self._assign_probabilities(individuals)
         return zip(individuals, probabilities)
 
-    def _probability(self, size: int, rank: int) -> float:
-        return ((self.c - 1) / (pow(self.c, size) - 1)) * (pow(self.c, size - rank))
+    def _assign_probabilities(self, individuals: list[Individual]):
+        size = len(individuals)
+        return [self._assign_probability(size, rank) for rank in range(size)]
+
+    def _assign_probability(self, size: int, rank: int) -> float:
+        return ((self.c - 1) / (pow(self.c, size) - 1)) * pow(self.c, size - rank)
 
     def _sort(self, individuals: list[Individual]):
         return sorted(individuals.copy(), key=functools.cmp_to_key(self._compare))

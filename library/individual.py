@@ -74,9 +74,10 @@ class IndividualFactory:
     def __init__(self, genotype_factory: GenotypeFactory):
         self.genotype_factory = genotype_factory
 
-    def generate(self, N: int):
-        genotypes = [self.genotype_factory.random()
-                     for _ in range(N - 1)] + [self.genotype_factory.optimal()]
-        phenotypes = [Phenotype(len(genotype.chromosome))
-                      for genotype in genotypes] + [Phenotype(0)]
-        return [Individual(*individual) for individual in zip(genotypes, phenotypes)]
+    def random(self, N: int):
+        return [Individual(genotype=self.genotype_factory.random(),
+                           phenotype=Phenotype(i)) for i in range(N)]
+
+    def optimal(self, N: int):
+        return [Individual(genotype=self.genotype_factory.optimal(),
+                           phenotype=Phenotype(i)) for i in range(N)]

@@ -1,6 +1,6 @@
-from operator import attrgetter
+from operator import itemgetter
 
-from library.individual import IndividualFactory, NumericalGenotypeFactory, BinaryGenotypeFactory
+from library.individual import IndividualFactory, BinaryGenotypeFactory
 from library.fitness import QuadraticFitnessFunction
 from library.population import Population
 
@@ -14,19 +14,23 @@ class GeneticAlgorithm:
         self.crossover_probability = crossover_probability
         self.mutation_probability = mutation_probability
 
-    def run(self):
+    def has_solution(self, verbose=True):
         iteration = 0
-        while not self._converge_(iteration):
+        while not self._converge(iteration):
             self.population.evolve()
-        return self._is_solution_()
+            if verbose:
+                if iteration % 1000 == 0:
+                    print(f"Iteration {iteration} has finished!")
+            iteration += 1
+        return self._check_for_solution()
 
-    def _is_solution_(self):
+    def _check_for_solution(self):
         if self.mutation_probability:
-            return self.population.is_homogeneous(diversity=.1) and self.population.is_optimal()
+            return self.population.is_optimal(percentage=90)
         else:
-            return self.population.is_identical() and self.population.is_optimal()
+            return self.population.is_optimal(percentage=100)
 
-    def _converge_(self, iteration):
+    def _converge(self, iteration):
         if self.mutation_probability:
             if iteration == 10000000 or self.population.is_homogeneous():
                 return True
@@ -37,7 +41,7 @@ class GeneticAlgorithm:
 
 
 def report(config, runs=100):
-    population_size, genotype_factory, fitness_function, *rest_config = attrgetter(
+    population_size, genotype_factory, fitness_function, *rest_config = itemgetter(
         "population_size",
         "genotype_factory",
         "fitness_function",
@@ -45,12 +49,18 @@ def report(config, runs=100):
         "mutation_probability"
     )(config)
 
-    individuals = IndividualFactory(genotype_factory).generate(population_size)
-    population = Population(individuals, fitness_function)
+    individual_factory = IndividualFactory(genotype_factory)
+
+    random_individuals = individual_factory.random(population_size - 1)
+    optimal_individuals = individual_factory.optimal(1)
+
+    individuals = random_individuals + optimal_individuals
+    optimal = optimal_individuals[0]
 
     success = 0
     for _ in range(runs):
-        if GeneticAlgorithm(population, *rest_config).run():
+        population = Population(individuals, optimal, fitness_function)
+        if GeneticAlgorithm(population, *rest_config).has_solution():
             success += 1
 
     print(f"Success runs: {success} / {runs}")
