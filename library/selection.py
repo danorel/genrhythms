@@ -1,3 +1,4 @@
+import abc
 import functools
 
 from library.individual import Individual
@@ -35,11 +36,32 @@ class Rank:
             return 0
 
 
-class RWS:
-    def __init__(self):
+class Selection(abc.ABC):
+    def __init__(self, c: float, fitness_function: FitnessFunction):
+        self.rank = Rank(c, fitness_function)
+
+    @abc.abstractmethod
+    def next_generation(self, individuals: list[Individual]) -> list[Individual]:
         pass
 
 
-class SUS:
-    def __init__(self):
-        pass
+@Selection.register
+class RWS(Selection):
+    def __init__(self, c: float, fitness_function: FitnessFunction):
+        super().__init__(c, fitness_function)
+
+    def next_generation(self, individuals: list[Individual]):
+        individuals_with_probabilities = self.rank.match_with_probabilities(
+            individuals)
+        return []
+
+
+@Selection.register
+class SUS(Selection):
+    def __init__(self, c: float, fitness_function: FitnessFunction):
+        super().__init__(c, fitness_function)
+
+    def next_generation(self, individuals: list[Individual]):
+        individuals_with_probabilities = self.rank.match_with_probabilities(
+            individuals)
+        return []

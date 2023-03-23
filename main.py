@@ -3,6 +3,7 @@ from operator import itemgetter
 from library.individual import IndividualFactory, BinaryGenotypeFactory
 from library.fitness import QuadraticFitnessFunction
 from library.population import Population
+from library.selection import SUS
 
 
 class GeneticAlgorithm:
@@ -41,10 +42,10 @@ class GeneticAlgorithm:
 
 
 def report(config, runs=100):
-    population_size, genotype_factory, fitness_function, *rest_config = itemgetter(
+    population_size, genotype_factory, selection, *rest_config = itemgetter(
         "population_size",
         "genotype_factory",
-        "fitness_function",
+        "selection",
         "crossover_probability",
         "mutation_probability"
     )(config)
@@ -59,7 +60,7 @@ def report(config, runs=100):
 
     success = 0
     for _ in range(runs):
-        population = Population(individuals, optimal, fitness_function)
+        population = Population(individuals, optimal, selection)
         if GeneticAlgorithm(population, *rest_config).has_solution():
             success += 1
 
@@ -70,7 +71,7 @@ def main():
     report({
         "population_size": 100,
         "genotype_factory": BinaryGenotypeFactory(),
-        "fitness_function": QuadraticFitnessFunction(),
+        "selection": SUS(0.9801, QuadraticFitnessFunction()),
         "crossover_probability": 1,
         "mutation_probability": 0
     })

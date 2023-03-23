@@ -1,20 +1,19 @@
 from library.individual import Individual
-from library.fitness import FitnessFunction
-from library.selection import Rank
+from library.selection import Selection
 
 
 class Population:
     def __init__(self,
                  individuals: list[Individual],
                  optimal: Individual,
-                 fitness_function: FitnessFunction):
+                 selection: Selection):
         self.individuals = individuals
         self.optimal = optimal
-        self.rank = Rank(0.9801, fitness_function)
+        self.selection = selection
 
     def evolve(self):
-        individuals_probabilities = self.rank.match_with_probabilities(
-            self.individuals)
+        prev_individuals = self.individuals
+        next_individuals = self.selection.next_generation(prev_individuals)
         return None
 
     def is_optimal(self, percentage: float = 90.):
