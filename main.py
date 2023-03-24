@@ -1,7 +1,7 @@
 from operator import itemgetter
 
-from library.individual import IndividualFactory, BinaryGenotypeFactory
-from library.fitness import FHDFitnessFunction
+from library.individual import BinaryGenotypeFactory, BinaryPhenotypeFactory, IndividualFactory, NumericalGenotypeFactory, NumericalPhenotypeFactory
+from library.fitness import Constant100FitnessFunction, FHDFitnessFunction, ExponentialFitnessFunction
 from library.population import Population
 from library.selection import Selection, RWS, SUS
 from library.operator import Crossover, DenseMutation, Mutation, OnePointCrossover
@@ -49,15 +49,13 @@ class GeneticAlgorithm:
 
 
 def report(config, runs=1):
-    population_size, genotype_factory, *rest_config = itemgetter(
+    population_size, individual_factory, *rest_config = itemgetter(
         "population_size",
-        "genotype_factory",
+        "individual_factory",
         "selection",
         "crossover",
         "mutation"
     )(config)
-
-    individual_factory = IndividualFactory(genotype_factory)
 
     random_individuals = individual_factory.random(population_size - 1)
     optimal_individuals = individual_factory.optimal(1)
@@ -75,11 +73,13 @@ def report(config, runs=1):
 
 
 def main():
+    individual_factory = IndividualFactory(genotype_factory=BinaryGenotypeFactory(length=10),
+                                           phenotype_factory=BinaryPhenotypeFactory())
     report({
         "population_size": 100,
-        "genotype_factory": BinaryGenotypeFactory(length=100),
+        "individual_factory": individual_factory,
         "selection": RWS(0.9801, FHDFitnessFunction()),
-        "crossover": OnePointCrossover(),
+        "crossover": OnePointCrossover(individual_factory),
         "mutation": DenseMutation()
     })
 

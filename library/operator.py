@@ -1,10 +1,13 @@
 import abc
 import random
 
-from library.individual import Genotype, Individual, Phenotype
+from library.individual import Individual, IndividualFactory
 
 
 class Crossover(abc.ABC):
+    def __init__(self, individual_factory: IndividualFactory) -> None:
+        self.individual_factory = individual_factory
+
     @abc.abstractmethod
     def next_generation(self, individuals: list[Individual]) -> list[Individual]:
         pass
@@ -30,10 +33,10 @@ class OnePointCrossover(Crossover):
 
             crossover_point = int(random.random() * len(chromosome1))
 
-            child1 = Individual(genotype=Genotype(chromosome1[:crossover_point] + chromosome2[crossover_point:]),
-                                phenotype=Phenotype(0))
-            child2 = Individual(genotype=Genotype(chromosome2[:crossover_point] + chromosome1[crossover_point:]),
-                                phenotype=Phenotype(0))
+            child1 = self.individual_factory.instance(
+                chromosome1[:crossover_point] + chromosome2[crossover_point:])
+            child2 = self.individual_factory.instance(
+                chromosome2[:crossover_point] + chromosome1[crossover_point:])
 
             next_individuals.append(child1)
             next_individuals.append(child2)

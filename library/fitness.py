@@ -11,7 +11,7 @@ class FitnessFunction(abc.ABC):
 
 
 @FitnessFunction.register
-class ConstFitnessFunction(FitnessFunction):
+class Constant100FitnessFunction(FitnessFunction):
     def score(self, _: Individual):
         return 100
 
@@ -20,8 +20,7 @@ class ConstFitnessFunction(FitnessFunction):
 class FHDFitnessFunction(FitnessFunction):
     def score(self, individual: Individual):
         delta = 100
-        l = individual.genotype.chromosome.__len__()
-        k = individual.genotype.chromosome.count("0")
+        l, k = individual.phenotype.value
         return (l - k) + k * delta
 
 
@@ -30,6 +29,19 @@ class QuadraticFitnessFunction(FitnessFunction):
     def score(self, individual: Individual):
         x = individual.phenotype.value
         return math.pow(x, 2)
+
+
+@FitnessFunction.register
+class ConstantMinusQuadraticFitnessFunction(FitnessFunction):
+    def score(self, individual: Individual):
+        x = individual.phenotype.value
+        return math.pow(5.12, 2) - math.pow(x, 2)
+
+
+@FitnessFunction.register
+class ConstantQuadraticFitnessFunction(FitnessFunction):
+    def score(self, _: Individual):
+        return math.pow(5.12, 2)
 
 
 @FitnessFunction.register
