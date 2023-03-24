@@ -18,20 +18,21 @@ class GeneticAlgorithm:
         self.crossover = crossover
         self.mutation = mutation
 
-    def has_solution(self, verbose=True):
+    def has_solution(self, verbose=False):
         iteration = 0
         while not self._stop_criteria(iteration):
             self.population.evolve(selection=self.selection,
                                    crossover=self.crossover,
                                    mutation=self.mutation)
             if verbose:
-                if iteration % 20 == 0:
+                if iteration % 10 == 0:
                     print(f"Iteration {iteration} has finished!")
-                    print(self.population.individuals)
             iteration += 1
-        return self._check_for_solution()
+        return self._check_for_solution(verbose)
 
-    def _check_for_solution(self):
+    def _check_for_solution(self, verbose=False):
+        if verbose:
+            print(f"Head individuals: {self.population.head()}")
         if self.mutation is not None:
             return self.population.is_optimal(percentage=90)
         else:
@@ -39,10 +40,10 @@ class GeneticAlgorithm:
 
     def _stop_criteria(self, iteration):
         if self.mutation is not None:
-            if iteration == 101 or self.population.is_homogeneous():
+            if iteration == 10000001 or self.population.is_homogeneous():
                 return True
         else:
-            if iteration == 101 or self.population.is_identical():
+            if iteration == 10000001 or self.population.is_identical():
                 return True
         return False
 
@@ -67,7 +68,7 @@ def report(config, runs=1):
     success = 0
     for _ in range(runs):
         population = Population(individuals, optimal)
-        if GeneticAlgorithm(population, *rest_config).has_solution():
+        if GeneticAlgorithm(population, *rest_config).has_solution(verbose=True):
             success += 1
 
     print(f"Success runs: {success} / {runs}")
@@ -75,8 +76,8 @@ def report(config, runs=1):
 
 def main():
     report({
-        "population_size": 10,
-        "genotype_factory": BinaryGenotypeFactory(length=10),
+        "population_size": 100,
+        "genotype_factory": BinaryGenotypeFactory(length=100),
         "selection": RWS(0.9801, FHDFitnessFunction()),
         "crossover": OnePointCrossover(),
         "mutation": DenseMutation()

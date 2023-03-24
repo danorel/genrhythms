@@ -38,3 +38,6 @@ class Population:
         unique = len(
             set(map(lambda individual: individual.genotype.chromosome, self.individuals)))
         return (unique / total) * 100 <= percentage
+
+    def head(self, N=5):
+        return self.individuals.copy()[:N]

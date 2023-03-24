@@ -22,7 +22,7 @@ class FHDFitnessFunction(FitnessFunction):
         delta = 100
         l = individual.genotype.chromosome.__len__()
         k = individual.genotype.chromosome.count("0")
-        return (l - k) * k * delta
+        return (l - k) + k * delta
 
 
 @FitnessFunction.register

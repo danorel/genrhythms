@@ -12,10 +12,10 @@ class Crossover(abc.ABC):
 
 @Crossover.register
 class OnePointCrossover(Crossover):
-    def next_generation(self, individuals: list[Individual]):
+    def next_generation(self, prev_individuals: list[Individual]):
         next_individuals = []
 
-        individuals = individuals.copy()
+        individuals = prev_individuals.copy()
 
         def pop_individual():
             index = random.randrange(0, len(individuals))
@@ -25,25 +25,22 @@ class OnePointCrossover(Crossover):
             parent1 = pop_individual()
             parent2 = pop_individual()
 
-            child1, child2 = self._birth(parent1, parent2)
+            chromosome1 = parent1.genotype.chromosome
+            chromosome2 = parent2.genotype.chromosome
+
+            crossover_point = int(random.random() * len(chromosome1))
+
+            child1 = Individual(genotype=Genotype(chromosome1[:crossover_point] + chromosome2[crossover_point:]),
+                                phenotype=Phenotype(0))
+            child2 = Individual(genotype=Genotype(chromosome2[:crossover_point] + chromosome1[crossover_point:]),
+                                phenotype=Phenotype(0))
 
             next_individuals.append(child1)
             next_individuals.append(child2)
 
+        assert(len(prev_individuals) == len(next_individuals))
+
         return next_individuals
-
-    def _birth(self, parent1: Individual, parent2: Individual):
-        chromosome1 = parent1.genotype.chromosome
-        chromosome2 = parent2.genotype.chromosome
-
-        crossover_point = int(random.random() * len(chromosome1))
-
-        child1 = Individual(genotype=Genotype(chromosome1[:crossover_point] + chromosome2[crossover_point:]),
-                            phenotype=Phenotype(0))
-        child2 = Individual(genotype=Genotype(chromosome2[:crossover_point] + chromosome1[crossover_point:]),
-                            phenotype=Phenotype(0))
-
-        return [child1, child2]
 
 
 class MutationTable:
@@ -51,7 +48,7 @@ class MutationTable:
         f = [0.0005, 0.00001]
 
         self.l = [10, 100]
-        self.n = [10, 100, 200, 300, 400, 500, 1000]
+        self.n = [100, 200, 300, 400, 500, 1000]
 
         self.table = [[0.] * len(self.n) for _ in range(len(self.l))]
         for l_index, _ in enumerate(self.l):
@@ -78,18 +75,20 @@ class Mutation(abc.ABC):
 
 @Mutation.register
 class DenseMutation(Mutation):
-    def next_generation(self, individuals: list[Individual]):
-        individuals = individuals.copy()
+    def next_generation(self, prev_individuals: list[Individual]):
+        next_individuals = prev_individuals.copy()
 
-        n = len(individuals)
-        l = len(individuals[0].genotype.chromosome)
+        n = len(next_individuals)
+        l = len(next_individuals[0].genotype.chromosome)
 
         mutation_rate = self.mutation_table.rate(l, n)
 
-        for individual in individuals:
+        for individual in next_individuals:
             for locus, _ in enumerate(individual.genotype.chromosome):
                 active_mutation = (random.random() <= mutation_rate)
                 if active_mutation:
                     individual.genotype.mutate(locus)
 
-        return individuals
+        assert(len(prev_individuals) == len(next_individuals))
+
+        return next_individuals
