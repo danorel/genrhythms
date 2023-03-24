@@ -1,5 +1,6 @@
 import abc
 import functools
+import random
 
 from library.individual import Individual
 from library.fitness import FitnessFunction
@@ -19,7 +20,7 @@ class Rank:
 
     def _assign_probabilities(self, individuals: list[Individual]):
         size = len(individuals)
-        return [self._assign_probability(size, rank) for rank in range(size)]
+        return [self._assign_probability(size, rank) for rank in range(1, size + 1)]
 
     def _assign_probability(self, size: int, rank: int) -> float:
         return ((self.c - 1) / (pow(self.c, size) - 1)) * pow(self.c, size - rank)
@@ -51,9 +52,27 @@ class RWS(Selection):
         super().__init__(c, fitness_function)
 
     def next_generation(self, individuals: list[Individual]):
-        individuals_with_probabilities = self.rank.match_with_probabilities(
-            individuals)
-        return []
+        next_individuals = []
+
+        wheel = dict()
+        spins = len(individuals)
+        segment = 0
+
+        for individual, probability in self.rank.match_with_probabilities(individuals):
+            segment_from, segment_to = segment, segment + probability
+            wheel[(segment_from, segment_to)] = individual
+            segment += probability
+
+        for _ in range(spins):
+            segment_point = random.random()
+            for (segment_from, segment_to), individual in wheel.items():
+                if segment_point >= segment_from and segment_point <= segment_to:
+                    next_individuals.append(individual)
+                    break
+
+        assert len(next_individuals) == spins
+
+        return next_individuals
 
 
 @Selection.register
@@ -62,6 +81,29 @@ class SUS(Selection):
         super().__init__(c, fitness_function)
 
     def next_generation(self, individuals: list[Individual]):
-        individuals_with_probabilities = self.rank.match_with_probabilities(
-            individuals)
-        return []
+        next_individuals = []
+
+        wheel = dict()
+        segment = 0
+
+        for individual, probability in self.rank.match_with_probabilities(individuals):
+            segment_from, segment_to = segment, segment + probability
+            wheel[(segment_from, segment_to)] = individual
+            segment += probability
+
+        arrows = len(individuals)
+        arrow_step = 1 / arrows
+        arrow_countdown = random.random()
+
+        for arrow_index in range(arrows):
+            segment_point = arrow_countdown + arrow_index * arrow_step
+            if segment_point > 1:
+                segment_point -= 1
+            for (segment_from, segment_to), individual in wheel.items():
+                if segment_point >= segment_from and segment_point <= segment_to:
+                    next_individuals.append(individual)
+                    break
+
+        assert len(next_individuals) == arrows
+
+        return next_individuals

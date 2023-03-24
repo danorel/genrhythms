@@ -1,9 +1,9 @@
 from operator import itemgetter
 
 from library.individual import IndividualFactory, BinaryGenotypeFactory
-from library.fitness import QuadraticFitnessFunction
+from library.fitness import FHDFitnessFunction
 from library.population import Population
-from library.selection import SUS
+from library.selection import RWS, SUS
 
 
 class GeneticAlgorithm:
@@ -20,7 +20,7 @@ class GeneticAlgorithm:
         while not self._converge(iteration):
             self.population.evolve()
             if verbose:
-                if iteration % 1000 == 0:
+                if iteration % 5 == 0:
                     print(f"Iteration {iteration} has finished!")
             iteration += 1
         return self._check_for_solution()
@@ -33,15 +33,15 @@ class GeneticAlgorithm:
 
     def _converge(self, iteration):
         if self.mutation_probability:
-            if iteration == 10000000 or self.population.is_homogeneous():
+            if iteration == 11 or self.population.is_homogeneous():
                 return True
         else:
-            if iteration == 10000000 or self.population.is_identical():
+            if iteration == 11 or self.population.is_identical():
                 return True
         return False
 
 
-def report(config, runs=100):
+def report(config, runs=1):
     population_size, genotype_factory, selection, *rest_config = itemgetter(
         "population_size",
         "genotype_factory",
@@ -69,9 +69,9 @@ def report(config, runs=100):
 
 def main():
     report({
-        "population_size": 100,
-        "genotype_factory": BinaryGenotypeFactory(),
-        "selection": SUS(0.9801, QuadraticFitnessFunction()),
+        "population_size": 10,
+        "genotype_factory": BinaryGenotypeFactory(length=10),
+        "selection": SUS(0.9801, FHDFitnessFunction()),
         "crossover_probability": 1,
         "mutation_probability": 0
     })
