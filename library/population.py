@@ -1,20 +1,26 @@
 from library.individual import Individual
 from library.selection import Selection
+from library.operator import Crossover, Mutation
 
 
 class Population:
     def __init__(self,
                  individuals: list[Individual],
-                 optimal: Individual,
-                 selection: Selection):
+                 optimal: Individual):
         self.individuals = individuals
         self.optimal = optimal
-        self.selection = selection
 
-    def evolve(self):
-        prev_individuals = self.individuals
-        next_individuals = self.selection.next_generation(prev_individuals)
-        return None
+    def evolve(self,
+               selection: Selection,
+               crossover: Crossover or None,
+               mutation: Mutation or None):
+        individuals = self.individuals
+        individuals = selection.next_generation(individuals)
+        if crossover is not None:
+            individuals = crossover.next_generation(individuals)
+        if mutation is not None:
+            individuals = mutation.next_generation(individuals)
+        self.individuals = individuals
 
     def is_optimal(self, percentage: float = 90.):
         total = len(self.individuals)
