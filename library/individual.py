@@ -14,6 +14,11 @@ class Genotype:
     def __init__(self, chromosome: str):
         self.chromosome = chromosome
 
+    def mutate(self, locus: int):
+        mutation_gene = "0" if self.chromosome[locus] == "1" else "1"
+        self.chromosome = self.chromosome[:locus] + \
+            mutation_gene + self.chromosome[locus + 1:]
+
     def __repr__(self):
         return f"({self.chromosome})"
 

@@ -14,7 +14,7 @@ class Population:
                selection: Selection,
                crossover: Crossover or None,
                mutation: Mutation or None):
-        individuals = self.individuals
+        individuals = self.individuals.copy()
         individuals = selection.next_generation(individuals)
         if crossover is not None:
             individuals = crossover.next_generation(individuals)

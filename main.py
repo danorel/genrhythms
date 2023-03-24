@@ -4,7 +4,7 @@ from library.individual import IndividualFactory, BinaryGenotypeFactory
 from library.fitness import FHDFitnessFunction
 from library.population import Population
 from library.selection import Selection, RWS, SUS
-from library.operator import Crossover, Mutation
+from library.operator import Crossover, DenseMutation, Mutation, OnePointCrossover
 
 
 class GeneticAlgorithm:
@@ -20,13 +20,14 @@ class GeneticAlgorithm:
 
     def has_solution(self, verbose=True):
         iteration = 0
-        while not self._converge(iteration):
+        while not self._stop_criteria(iteration):
             self.population.evolve(selection=self.selection,
                                    crossover=self.crossover,
                                    mutation=self.mutation)
             if verbose:
-                if iteration % 5 == 0:
+                if iteration % 20 == 0:
                     print(f"Iteration {iteration} has finished!")
+                    print(self.population.individuals)
             iteration += 1
         return self._check_for_solution()
 
@@ -36,12 +37,12 @@ class GeneticAlgorithm:
         else:
             return self.population.is_optimal(percentage=100)
 
-    def _converge(self, iteration):
+    def _stop_criteria(self, iteration):
         if self.mutation is not None:
-            if iteration == 11 or self.population.is_homogeneous():
+            if iteration == 101 or self.population.is_homogeneous():
                 return True
         else:
-            if iteration == 11 or self.population.is_identical():
+            if iteration == 101 or self.population.is_identical():
                 return True
         return False
 
@@ -76,9 +77,9 @@ def main():
     report({
         "population_size": 10,
         "genotype_factory": BinaryGenotypeFactory(length=10),
-        "selection": SUS(0.9801, FHDFitnessFunction()),
-        "crossover": None,
-        "mutation": None
+        "selection": RWS(0.9801, FHDFitnessFunction()),
+        "crossover": OnePointCrossover(),
+        "mutation": DenseMutation()
     })
 
 
