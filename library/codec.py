@@ -3,34 +3,33 @@ import abc
 
 class Codec(abc.ABC):
     @abc.abstractmethod
-    def encode(self, to_encode) -> str:
+    def encode(self, number: str) -> str:
         pass
 
     @abc.abstractmethod
-    def decode(self, to_decode) -> str:
+    def decode(self, number: str) -> str:
         pass
 
 
 @Codec.register
-class DecimalToBinaryCodec(Codec):
-    def encode(self, decimal):
-        return bin(decimal)[2:]
+class BinaryCodec(Codec):
+    def encode(self, binary):
+        return binary
 
     def decode(self, binary):
-        return str(int(binary, 2))
+        return binary
 
 
 @Codec.register
-class BinaryToGreyCodec(Codec):
+class GrayCodec(Codec):
     def encode(self, binary):
-        binary = int(binary, 2)
-        binary ^= (binary >> 1)
-        return bin(binary)[2:]
+        grey = binary[0]
+        for i in range(1, len(binary)):
+            grey += str(int(binary[i - 1]) ^ int(binary[i]))
+        return grey
 
     def decode(self, gray):
-        gray = int(gray, 2)
-        mask = gray
-        while mask != 0:
-            mask >>= 1
-            gray ^= mask
-        return bin(gray)[2:]
+        binary = gray[0]
+        for i in range(1, len(gray)):
+            binary += str(int(binary[i - 1]) ^ int(gray[i]))
+        return binary

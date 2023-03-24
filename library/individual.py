@@ -1,6 +1,8 @@
 import abc
 import random
 
+from library.codec import Codec, BinaryCodec
+
 
 class Genotype:
     def __init__(self, chromosome: str):
@@ -16,11 +18,12 @@ class Genotype:
 
 
 class GenotypeFactory(abc.ABC):
-    def __init__(self, length):
+    def __init__(self, length, codec: Codec = BinaryCodec()):
         self.length = length
+        self.codec: Codec = codec
 
     @abc.abstractmethod
-    def sample(self, chromosome: str) -> Genotype:
+    def sample(self, chromosome: str, encoded: bool = True) -> Genotype:
         pass
 
     @abc.abstractmethod
@@ -34,37 +37,45 @@ class GenotypeFactory(abc.ABC):
 
 @GenotypeFactory.register
 class BinaryGenotypeFactory(GenotypeFactory):
-    def __init__(self, length=100):
-        super().__init__(length)
+    def __init__(self, length=100, codec: Codec = BinaryCodec()):
+        super().__init__(length, codec)
 
-    def sample(self, chromosome: str):
+    def sample(self, chromosome: str, encoded=True):
+        if not encoded:
+            chromosome = self.codec.encode(chromosome)
         return Genotype(chromosome)
 
     def random(self):
         chromosome = "".join(
             ["1" if random.random() > 0.5 else "0" for _ in range(self.length)])
+        chromosome = self.codec.encode(chromosome)
         return Genotype(chromosome)
 
     def optimal(self):
         chromosome = "0" * self.length
+        chromosome = self.codec.encode(chromosome)
         return Genotype(chromosome)
 
 
 @GenotypeFactory.register
 class NumericalGenotypeFactory(GenotypeFactory):
-    def __init__(self, length=10):
-        super().__init__(length)
+    def __init__(self, length=10, codec=BinaryCodec()):
+        super().__init__(length, codec)
 
-    def sample(self, chromosome: str):
+    def sample(self, chromosome: str, encoded=True):
+        if not encoded:
+            chromosome = self.codec.encode(chromosome)
         return Genotype(chromosome)
 
     def random(self):
         chromosome = "".join(
             ["1" if random.random() > 0.5 else "0" for _ in range(self.length)])
+        chromosome = self.codec.encode(chromosome)
         return Genotype(chromosome)
 
     def optimal(self):
         chromosome = "1" * self.length
+        chromosome = self.codec.encode(chromosome)
         return Genotype(chromosome)
 
 
@@ -77,6 +88,9 @@ class Phenotype:
 
 
 class PhenotypeFactory(abc.ABC):
+    def __init__(self, codec: Codec = BinaryCodec()):
+        self.codec: Codec = codec
+
     @abc.abstractmethod
     def sample(self, genotype: Genotype) -> Phenotype:
         pass
@@ -84,14 +98,16 @@ class PhenotypeFactory(abc.ABC):
 
 class BinaryPhenotypeFactory(PhenotypeFactory):
     def sample(self, genotype: Genotype):
-        l = genotype.chromosome.__len__()
-        k = genotype.chromosome.count("0")
+        chromosome = self.codec.decode(genotype.chromosome)
+        l = chromosome.__len__()
+        k = chromosome.count("0")
         return Phenotype(value=(l, k))
 
 
 class NumericalPhenotypeFactory(PhenotypeFactory):
     def sample(self, genotype: Genotype):
-        decimal = int(genotype.chromosome, 2)
+        chromosome = self.codec.decode(genotype.chromosome)
+        decimal = int(chromosome, 2)
         value = decimal / 100
         return Phenotype(value)
 
@@ -112,8 +128,8 @@ class IndividualFactory:
         self.genotype_factory = genotype_factory
         self.phenotype_factory = phenotype_factory
 
-    def instance(self, chromosome: str):
-        genotype = self.genotype_factory.sample(chromosome)
+    def sample(self, chromosome: str, encoded: bool = True):
+        genotype = self.genotype_factory.sample(chromosome, encoded)
         phenotype = self.phenotype_factory.sample(genotype)
         return Individual(genotype, phenotype)
 

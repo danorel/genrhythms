@@ -33,9 +33,9 @@ class OnePointCrossover(Crossover):
 
             crossover_point = int(random.random() * len(chromosome1))
 
-            child1 = self.individual_factory.instance(
+            child1 = self.individual_factory.sample(
                 chromosome1[:crossover_point] + chromosome2[crossover_point:])
-            child2 = self.individual_factory.instance(
+            child2 = self.individual_factory.sample(
                 chromosome2[:crossover_point] + chromosome1[crossover_point:])
 
             next_individuals.append(child1)

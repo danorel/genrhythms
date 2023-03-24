@@ -1,10 +1,11 @@
 from operator import itemgetter
 
 from library.individual import BinaryGenotypeFactory, BinaryPhenotypeFactory, IndividualFactory, NumericalGenotypeFactory, NumericalPhenotypeFactory
-from library.fitness import Constant100FitnessFunction, FHDFitnessFunction, ExponentialFitnessFunction
+from library.fitness import Constant100FitnessFunction, FHDFitnessFunction, ExponentialFitnessFunction, QuadraticFitnessFunction
 from library.population import Population
 from library.selection import Selection, RWS, SUS
 from library.operator import Crossover, DenseMutation, Mutation, OnePointCrossover
+from library.codec import BinaryCodec, GrayCodec
 
 
 class GeneticAlgorithm:
@@ -32,7 +33,7 @@ class GeneticAlgorithm:
 
     def _check_for_solution(self, verbose=False):
         if verbose:
-            print(f"Head individuals: {self.population.head()}")
+            print(f"Head individuals: {self.population.head(N=1)}")
         if self.mutation is not None:
             return self.population.is_optimal(percentage=90)
         else:
@@ -48,7 +49,7 @@ class GeneticAlgorithm:
         return False
 
 
-def report(config, runs=1):
+def report(config, runs=100):
     population_size, individual_factory, *rest_config = itemgetter(
         "population_size",
         "individual_factory",
@@ -72,17 +73,87 @@ def report(config, runs=1):
     print(f"Success runs: {success} / {runs}")
 
 
-def main():
-    individual_factory = IndividualFactory(genotype_factory=BinaryGenotypeFactory(length=10),
-                                           phenotype_factory=BinaryPhenotypeFactory())
-    report({
-        "population_size": 100,
-        "individual_factory": individual_factory,
-        "selection": RWS(0.9801, FHDFitnessFunction()),
-        "crossover": OnePointCrossover(individual_factory),
-        "mutation": DenseMutation()
-    })
+def report_binary(only_target=False):
+    individual_factory = IndividualFactory(genotype_factory=BinaryGenotypeFactory(length=100, codec=BinaryCodec()),
+                                           phenotype_factory=BinaryPhenotypeFactory(codec=BinaryCodec()))
+
+    if only_target:
+        report({
+            "population_size": 100,
+            "individual_factory": individual_factory,
+            "selection": RWS(0.9801, FHDFitnessFunction()),
+            "crossover": None,
+            "mutation": None
+        })
+    else:
+        report({
+            "population_size": 100,
+            "individual_factory": individual_factory,
+            "selection": RWS(0.9801, FHDFitnessFunction()),
+            "crossover": None,
+            "mutation": None
+        })
+        report({
+            "population_size": 100,
+            "individual_factory": individual_factory,
+            "selection": RWS(0.9801, FHDFitnessFunction()),
+            "crossover": OnePointCrossover(individual_factory),
+            "mutation": None
+        })
+        report({
+            "population_size": 100,
+            "individual_factory": individual_factory,
+            "selection": RWS(0.9801, FHDFitnessFunction()),
+            "crossover": None,
+            "mutation": DenseMutation()
+        })
+        report({
+            "population_size": 100,
+            "individual_factory": individual_factory,
+            "selection": RWS(0.9801, FHDFitnessFunction()),
+            "crossover": OnePointCrossover(individual_factory),
+            "mutation": DenseMutation()
+        })
+
+
+def report_numerical(only_target=False):
+    individual_factory = IndividualFactory(genotype_factory=NumericalGenotypeFactory(length=10, codec=GrayCodec()),
+                                           phenotype_factory=NumericalPhenotypeFactory(codec=GrayCodec()))
+
+    if only_target:
+        report({
+            "population_size": 100,
+            "individual_factory": individual_factory,
+            "selection": RWS(0.9801, ExponentialFitnessFunction(c=1)),
+            "crossover": OnePointCrossover(individual_factory),
+            "mutation": DenseMutation()
+        })
+    else:
+        report({
+            "population_size": 100,
+            "individual_factory": individual_factory,
+            "selection": RWS(0.9801, ExponentialFitnessFunction(c=1)),
+            "crossover": None,
+            "mutation": None
+        })
+        report({
+            "population_size": 100,
+            "individual_factory": individual_factory,
+            "selection": RWS(0.9801, ExponentialFitnessFunction(c=1)),
+            "crossover": OnePointCrossover(individual_factory),
+            "mutation": DenseMutation()
+        })
+
+
+def main(target="both", only_target=False):
+    if target == "binary":
+        report_binary(only_target)
+    elif target == "numerical":
+        report_numerical(only_target)
+    else:
+        report_binary(only_target)
+        report_numerical(only_target)
 
 
 if __name__ == "__main__":
-    main()
+    main(target="numerical", only_target=True)
