@@ -1,7 +1,7 @@
-from operator import itemgetter
+import itertools
 
 from library.individual import BinaryGenotypeFactory, BinaryPhenotypeFactory, IndividualFactory, NumericalGenotypeFactory, NumericalPhenotypeFactory
-from library.fitness import Constant100FitnessFunction, FHDFitnessFunction, ExponentialFitnessFunction, QuadraticFitnessFunction
+from library.fitness import FitnessFunction, Constant100FitnessFunction, ConstantQuadraticFitnessFunction, FHDFitnessFunction, ExponentialFitnessFunction, QuadraticFitnessFunction, ConstantMinusQuadraticFitnessFunction
 from library.population import Population
 from library.selection import Selection, RWS, SUS
 from library.operator import Crossover, DenseMutation, Mutation, OnePointCrossover
@@ -20,7 +20,7 @@ class GeneticAlgorithm:
         self.mutation = mutation
 
     def has_solution(self, verbose=False):
-        iteration = 0
+        iteration = 1
         while not self._stop_criteria(iteration):
             self.population.evolve(selection=self.selection,
                                    crossover=self.crossover,
@@ -29,11 +29,9 @@ class GeneticAlgorithm:
                 if iteration % 10 == 0:
                     print(f"Iteration {iteration} has finished!")
             iteration += 1
-        return self._check_for_solution(verbose)
+        return self._check_for_solution()
 
-    def _check_for_solution(self, verbose=False):
-        if verbose:
-            print(f"Head individuals: {self.population.head(N=1)}")
+    def _check_for_solution(self):
         if self.mutation is not None:
             return self.population.is_optimal(percentage=90)
         else:
@@ -49,111 +47,90 @@ class GeneticAlgorithm:
         return False
 
 
-def report(config, runs=100):
-    population_size, individual_factory, *rest_config = itemgetter(
-        "population_size",
-        "individual_factory",
-        "selection",
-        "crossover",
-        "mutation"
-    )(config)
+class GeneticAlgorithmSandbox:
+    def __init__(self,
+                 individual_factory: IndividualFactory,
+                 fitness_functions: list[FitnessFunction]):
+        crossovers: list[Crossover | None] = [
+            OnePointCrossover(individual_factory), None]
+        mutations: list[Mutation | None] = [DenseMutation(), None]
+        selections: list[type[Selection]] = [RWS, SUS]
 
-    random_individuals = individual_factory.random(population_size - 1)
-    optimal_individuals = individual_factory.optimal(1)
+        self.settings: list[dict] = [
+            {
+                "selection": selection(fitness_function),
+                "crossover": crossover,
+                "mutation": mutation
+            }
+            for (selection, fitness_function, crossover, mutation)
+            in itertools.product(*[selections, fitness_functions, crossovers, mutations])
+        ]
+        self.individual_factory = individual_factory
 
-    individuals = random_individuals + optimal_individuals
-    optimal = optimal_individuals[0]
+    def initial_population(self, size: int = 100):
+        random_individuals = self.individual_factory.random(size - 1)
+        optimal_individuals = self.individual_factory.optimal(1)
 
-    success = 0
-    for _ in range(runs):
-        population = Population(individuals, optimal)
-        if GeneticAlgorithm(population, *rest_config).has_solution(verbose=True):
-            success += 1
+        individuals = random_individuals + optimal_individuals
+        optimal = optimal_individuals[0]
 
-    print(f"Success runs: {success} / {runs}")
+        return Population(individuals, optimal)
 
+    def report(self, size: int = 100, runs: int = 1, verbose=False):
+        for _ in range(runs):
+            initial_population = self.initial_population(size)
 
-def report_binary(only_target=False):
-    individual_factory = IndividualFactory(genotype_factory=BinaryGenotypeFactory(length=100, codec=BinaryCodec()),
-                                           phenotype_factory=BinaryPhenotypeFactory(codec=BinaryCodec()))
+            for setting in self.settings:
+                algorithm = f"<{', '.join(f'{name}:{subalgorithm.__class__.__name__}' for name, subalgorithm in setting.items())}>"
 
-    if only_target:
-        report({
-            "population_size": 100,
-            "individual_factory": individual_factory,
-            "selection": RWS(0.9801, FHDFitnessFunction()),
-            "crossover": None,
-            "mutation": None
-        })
-    else:
-        report({
-            "population_size": 100,
-            "individual_factory": individual_factory,
-            "selection": RWS(0.9801, FHDFitnessFunction()),
-            "crossover": None,
-            "mutation": None
-        })
-        report({
-            "population_size": 100,
-            "individual_factory": individual_factory,
-            "selection": RWS(0.9801, FHDFitnessFunction()),
-            "crossover": OnePointCrossover(individual_factory),
-            "mutation": None
-        })
-        report({
-            "population_size": 100,
-            "individual_factory": individual_factory,
-            "selection": RWS(0.9801, FHDFitnessFunction()),
-            "crossover": None,
-            "mutation": DenseMutation()
-        })
-        report({
-            "population_size": 100,
-            "individual_factory": individual_factory,
-            "selection": RWS(0.9801, FHDFitnessFunction()),
-            "crossover": OnePointCrossover(individual_factory),
-            "mutation": DenseMutation()
-        })
+                if verbose:
+                    print(f"{algorithm} is running...")
+
+                population = initial_population.copy()
+
+                if GeneticAlgorithm(population, *setting.values()).has_solution(verbose):
+                    if verbose:
+                        print(f"{algorithm} succeeded!")
 
 
-def report_numerical(only_target=False):
-    individual_factory = IndividualFactory(genotype_factory=NumericalGenotypeFactory(length=10, codec=GrayCodec()),
-                                           phenotype_factory=NumericalPhenotypeFactory(codec=GrayCodec()))
-
-    if only_target:
-        report({
-            "population_size": 100,
-            "individual_factory": individual_factory,
-            "selection": RWS(0.9801, ExponentialFitnessFunction(c=1)),
-            "crossover": OnePointCrossover(individual_factory),
-            "mutation": DenseMutation()
-        })
-    else:
-        report({
-            "population_size": 100,
-            "individual_factory": individual_factory,
-            "selection": RWS(0.9801, ExponentialFitnessFunction(c=1)),
-            "crossover": None,
-            "mutation": None
-        })
-        report({
-            "population_size": 100,
-            "individual_factory": individual_factory,
-            "selection": RWS(0.9801, ExponentialFitnessFunction(c=1)),
-            "crossover": OnePointCrossover(individual_factory),
-            "mutation": DenseMutation()
-        })
+class BinaryGeneticAlgorithmSandbox(GeneticAlgorithmSandbox):
+    def __init__(self):
+        super().__init__(individual_factory=IndividualFactory(genotype_factory=BinaryGenotypeFactory(length=100, codec=BinaryCodec()),
+                                                              phenotype_factory=BinaryPhenotypeFactory(codec=BinaryCodec())),
+                         fitness_functions=[
+            Constant100FitnessFunction(),
+            FHDFitnessFunction()
+        ])
 
 
-def main(target="both", only_target=False):
+class NumericalGeneticAlgorithmSandbox(GeneticAlgorithmSandbox):
+    def __init__(self):
+        super().__init__(individual_factory=IndividualFactory(genotype_factory=NumericalGenotypeFactory(length=10, codec=BinaryCodec()),
+                                                              phenotype_factory=NumericalPhenotypeFactory(codec=BinaryCodec())),
+                         fitness_functions=[
+            QuadraticFitnessFunction(),
+            ConstantMinusQuadraticFitnessFunction(),
+            ConstantQuadraticFitnessFunction(),
+            ExponentialFitnessFunction(c=0.5),
+            ExponentialFitnessFunction(c=1),
+            ExponentialFitnessFunction(c=2)
+        ])
+
+
+def main(target="both", **kwargs):
+    binary_sandbox = BinaryGeneticAlgorithmSandbox()
+    numarical_sandbox = NumericalGeneticAlgorithmSandbox()
     if target == "binary":
-        report_binary(only_target)
+        binary_sandbox.report(**kwargs)
     elif target == "numerical":
-        report_numerical(only_target)
+        numarical_sandbox.report(**kwargs)
     else:
-        report_binary(only_target)
-        report_numerical(only_target)
+        binary_sandbox.report(**kwargs)
+        numarical_sandbox.report(**kwargs)
 
 
 if __name__ == "__main__":
-    main(target="numerical", only_target=True)
+    main(target="numerical",
+         size=100,
+         runs=1,
+         verbose=True)

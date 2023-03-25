@@ -41,3 +41,7 @@ class Population:
 
     def head(self, N=5):
         return self.individuals.copy()[:N]
+
+    def copy(self):
+        return Population(individuals=self.individuals.copy(),
+                          optimal=self.optimal.copy())

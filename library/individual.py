@@ -13,6 +13,9 @@ class Genotype:
         self.chromosome = self.chromosome[:locus] + \
             mutation_gene + self.chromosome[locus + 1:]
 
+    def copy(self):
+        return Genotype(chromosome=self.chromosome)
+
     def __repr__(self):
         return f"({self.chromosome})"
 
@@ -83,6 +86,9 @@ class Phenotype:
     def __init__(self, value):
         self.value = value
 
+    def copy(self):
+        return Phenotype(value=self.value)
+
     def __repr__(self):
         return f"({self.value})"
 
@@ -116,6 +122,10 @@ class Individual:
     def __init__(self, genotype: Genotype, phenotype: Phenotype):
         self.genotype = genotype
         self.phenotype = phenotype
+
+    def copy(self):
+        return Individual(genotype=self.genotype.copy(),
+                          phenotype=self.phenotype.copy())
 
     def __repr__(self):
         return f"{self.genotype} -> {self.phenotype}"

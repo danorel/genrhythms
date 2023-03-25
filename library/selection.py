@@ -38,8 +38,8 @@ class Rank:
 
 
 class Selection(abc.ABC):
-    def __init__(self, c: float, fitness_function: FitnessFunction):
-        self.rank = Rank(c, fitness_function)
+    def __init__(self, fitness_function: FitnessFunction):
+        self.rank = Rank(0.9801, fitness_function)
 
     @abc.abstractmethod
     def next_generation(self, individuals: list[Individual]) -> list[Individual]:
@@ -48,8 +48,8 @@ class Selection(abc.ABC):
 
 @Selection.register
 class RWS(Selection):
-    def __init__(self, c: float, fitness_function: FitnessFunction):
-        super().__init__(c, fitness_function)
+    def __init__(self, fitness_function: FitnessFunction):
+        super().__init__(fitness_function)
 
     def next_generation(self, individuals: list[Individual]):
         next_individuals = []
@@ -77,8 +77,8 @@ class RWS(Selection):
 
 @Selection.register
 class SUS(Selection):
-    def __init__(self, c: float, fitness_function: FitnessFunction):
-        super().__init__(c, fitness_function)
+    def __init__(self, fitness_function: FitnessFunction):
+        super().__init__(fitness_function)
 
     def next_generation(self, individuals: list[Individual]):
         next_individuals = []
