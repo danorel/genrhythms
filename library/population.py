@@ -33,11 +33,12 @@ class Population:
             set(map(lambda individual: individual.genotype.chromosome, self.individuals)))
         return unique == count
 
-    def is_homogeneous(self, percentage: float = 1.):
+    def is_homogeneous(self, percentage: float = 99.):
         total = len(self.individuals)
         unique = len(
             set(map(lambda individual: individual.genotype.chromosome, self.individuals)))
-        return (unique / total) * 100 <= percentage
+        non_unique = total - unique
+        return (non_unique / total) * 100 >= percentage
 
     def head(self, N=5):
         return self.individuals.copy()[:N]

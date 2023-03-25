@@ -45,7 +45,7 @@ class ConstantQuadraticFitnessFunction(FitnessFunction):
 
 
 @FitnessFunction.register
-class ExponentialFitnessFunction(FitnessFunction):
+class CExponentialFitnessFunction(FitnessFunction):
     def __init__(self, c: float):
         super().__init__()
         self.c = c
@@ -53,3 +53,21 @@ class ExponentialFitnessFunction(FitnessFunction):
     def score(self, individual: Individual):
         x = individual.phenotype.value
         return math.exp(self.c * x)
+
+
+@CExponentialFitnessFunction.register
+class QuarterExponentialFitnessFunction(CExponentialFitnessFunction):
+    def __init__(self):
+        super().__init__(0.25)
+
+
+@CExponentialFitnessFunction.register
+class TwiceExponentialFitnessFunction(CExponentialFitnessFunction):
+    def __init__(self):
+        super().__init__(2)
+
+
+@CExponentialFitnessFunction.register
+class ExponentialFitnessFunction(CExponentialFitnessFunction):
+    def __init__(self):
+        super().__init__(1)

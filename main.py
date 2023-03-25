@@ -1,7 +1,12 @@
+import os
 import itertools
+import matplotlib.pyplot as plt
+
+from collections import Counter
+from statistics import stdev
 
 from library.individual import BinaryGenotypeFactory, BinaryPhenotypeFactory, IndividualFactory, NumericalGenotypeFactory, NumericalPhenotypeFactory
-from library.fitness import FitnessFunction, Constant100FitnessFunction, ConstantQuadraticFitnessFunction, FHDFitnessFunction, ExponentialFitnessFunction, QuadraticFitnessFunction, ConstantMinusQuadraticFitnessFunction
+from library.fitness import FitnessFunction, Constant100FitnessFunction, ConstantQuadraticFitnessFunction, FHDFitnessFunction, ExponentialFitnessFunction, QuadraticFitnessFunction, ConstantMinusQuadraticFitnessFunction, QuarterExponentialFitnessFunction, TwiceExponentialFitnessFunction
 from library.population import Population
 from library.selection import Selection, RWS, SUS
 from library.operator import Crossover, DenseMutation, Mutation, OnePointCrossover
@@ -19,17 +24,19 @@ class GeneticAlgorithm:
         self.crossover = crossover
         self.mutation = mutation
 
-    def has_solution(self, verbose=False):
-        iteration = 1
-        while not self._stop_criteria(iteration):
+    def solve(self, verbose: bool = False):
+        snapshots: list[Population] = []
+        generation = 1
+        while not self._stop_criteria(generation):
+            snapshots.append(self.population.copy())
             self.population.evolve(selection=self.selection,
                                    crossover=self.crossover,
                                    mutation=self.mutation)
             if verbose:
-                if iteration % 10 == 0:
-                    print(f"Iteration {iteration} has finished!")
-            iteration += 1
-        return self._check_for_solution()
+                if generation % 25 == 0:
+                    print(f"Generation {generation} has grown!")
+            generation += 1
+        return self._check_for_solution(), snapshots + [self.population.copy()]
 
     def _check_for_solution(self):
         if self.mutation is not None:
@@ -37,12 +44,12 @@ class GeneticAlgorithm:
         else:
             return self.population.is_optimal(percentage=100)
 
-    def _stop_criteria(self, iteration):
+    def _stop_criteria(self, generation: int):
         if self.mutation is not None:
-            if iteration == 10000001 or self.population.is_homogeneous():
+            if generation == 10000001 or self.population.is_homogeneous(percentage=99):
                 return True
         else:
-            if iteration == 10000001 or self.population.is_identical():
+            if generation == 10000001 or self.population.is_identical():
                 return True
         return False
 
@@ -58,6 +65,7 @@ class GeneticAlgorithmSandbox:
 
         self.settings: list[dict] = [
             {
+                "fitness_function": fitness_function,
                 "selection": selection(fitness_function),
                 "crossover": crossover,
                 "mutation": mutation
@@ -76,21 +84,74 @@ class GeneticAlgorithmSandbox:
 
         return Population(individuals, optimal)
 
-    def report(self, size: int = 100, runs: int = 1, verbose=False):
-        for _ in range(runs):
+    def report(self,
+               size: int = 100,
+               runs: int = 1,
+               snapshot_first: int = 5,
+               verbose=False):
+        statistics = Counter()
+
+        for run in range(1, runs + 1):
             initial_population = self.initial_population(size)
 
             for setting in self.settings:
-                algorithm = f"<{', '.join(f'{name}:{subalgorithm.__class__.__name__}' for name, subalgorithm in setting.items())}>"
+                fitness_function, *rest_setting = setting.values()
+
+                name = f"<{', '.join(f'{function.__class__.__name__}' for function in setting.values())}>"
 
                 if verbose:
-                    print(f"{algorithm} is running...")
+                    print(f"{name} is running...")
 
-                population = initial_population.copy()
+                algorithm = GeneticAlgorithm(
+                    initial_population.copy(), *rest_setting)
+                has_solution, populations = algorithm.solve(verbose)
 
-                if GeneticAlgorithm(population, *setting.values()).has_solution(verbose):
-                    if verbose:
-                        print(f"{algorithm} succeeded!")
+                statistics[name] += 1 if has_solution else 0
+
+                if run <= snapshot_first:
+                    self.plot_snapshot(run,
+                                       populations,
+                                       fitness_function,
+                                       name)
+
+    def plot_snapshot(self,
+                      run: int,
+                      populations: list[Population],
+                      fitness_function: FitnessFunction,
+                      algorithm_name: str):
+        plot_data = []
+
+        N = len(populations[0].individuals)
+        generations = [number for number in range(1, len(populations) + 1)]
+
+        for population in populations:
+            individuals_health = [fitness_function.score(
+                individual) for individual in population.individuals]
+            plot_data.append({
+                "Mean health": sum(individuals_health) / len(individuals_health),
+                "Max health": max(individuals_health),
+                "Min health": min(individuals_health),
+                "Stdev health": stdev(individuals_health)
+            })
+
+        dirfig = f"function/{N}/{algorithm_name}/{run}"
+        if not os.path.exists(dirfig):
+            os.makedirs(dirfig)
+
+        def plot_metric(metric_name: str):
+            metric_data = list(
+                map(lambda plot_item: plot_item[metric_name], plot_data))
+            plt.title(metric_name)
+            plt.plot(generations, metric_data)
+            plt.ylabel(metric_name)
+            plt.xlabel("Generation")
+            plt.savefig(f'{dirfig}/{metric_name}')
+            plt.clf()
+
+        metrics = ["Mean health", "Max health", "Min health", "Stdev health"]
+
+        for metric in metrics:
+            plot_metric(metric)
 
 
 class BinaryGeneticAlgorithmSandbox(GeneticAlgorithmSandbox):
@@ -111,9 +172,9 @@ class NumericalGeneticAlgorithmSandbox(GeneticAlgorithmSandbox):
             QuadraticFitnessFunction(),
             ConstantMinusQuadraticFitnessFunction(),
             ConstantQuadraticFitnessFunction(),
-            ExponentialFitnessFunction(c=0.5),
-            ExponentialFitnessFunction(c=1),
-            ExponentialFitnessFunction(c=2)
+            QuarterExponentialFitnessFunction(),
+            ExponentialFitnessFunction(),
+            TwiceExponentialFitnessFunction(),
         ])
 
 
@@ -133,4 +194,5 @@ if __name__ == "__main__":
     main(target="numerical",
          size=100,
          runs=1,
+         snapshot_first=5,
          verbose=True)
